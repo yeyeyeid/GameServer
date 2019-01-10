@@ -1,0 +1,954 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.dyz</groupId>
+  <artifactId>GameServer</artifactId>
+  <packaging>war</packaging>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>GameServer Maven Webapp</name>
+  <url>http://maven.apache.org</url>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>alfresco-public</id>
+      <url>https://artifacts.alfresco.com/nexus/content/groups/public</url>
+    </pluginRepository>
+    <pluginRepository>
+      <id>alfresco-public-snapshots</id>
+      <url>https://artifacts.alfresco.com/nexus/content/groups/public-snapshots</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>beardedgeeks-releases</id>
+      <url>http://beardedgeeks.googlecode.com/svn/repository/releases</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <properties>
+    <!--默认使用的properties文件配置 -->
+    <env>dev</env>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- 编译时的编码 -->
+    <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+
+    <!--<argLine>-Dfile.encoding=UTF-8</argLine>-->
+
+    <!-- <spring.version>4.1.9.RELEASE</spring.version> -->
+    <!-- <spring.version>4.3.7.RELEASE</spring.version>该版本报错NoSuchMethodError: org.springframework.beans.MutableProperty -->
+    <spring.version>4.2.6.RELEASE</spring.version><!-- 因Tomcat启动： ClassNotFoundException org.springframework.test.context.ContextConfiguration，特改用该版本 -->
+
+    <mybatis.version>3.4.0</mybatis.version><!-- <mybatis.version>3.2.8</mybatis.version> -->
+
+    <junit.version>4.12</junit.version><!-- spring 4+要求该版本junit -->
+    <mysql.version>5.1.30</mysql.version>
+    <log4j.version>1.2.17</log4j.version>
+    <slf4j.version>1.7.7</slf4j.version>
+    <javaee.version>7.0</javaee.version>
+
+    <energySDK.version>0.0.6</energySDK.version>
+
+    <!-- <skipTests>true</skipTests> -->
+    <maven.test.skip>true</maven.test.skip><!-- 忽略单元测试：不执行测试用例，也不编译测试用例类 -->
+  </properties>
+
+  <!--<profiles>
+    <profile>
+      <id>dev</id>
+      <properties>
+        <env>dev</env>
+        &lt;!&ndash; <envir.jdbc.ip>120.77.255.169</envir.jdbc.ip>
+          <envir.jdbc.url>jdbc:mysql://120.77.255.169:3306/energy?useUnicode=true;ampcharacterEncoding=UTF-8;ampzeroDateTimeBehavior=convertToNull</envir.jdbc.url>
+          <envir.jdbc.username>energy</envir.jdbc.username>
+          <envir.jdbc.password>energy1</envir.jdbc.password>
+          <envir.profile.active>dev</envir.profile.active> &ndash;&gt;
+        <envir.deploy.url>http://192.168.5.12:8080/manager/text</envir.deploy.url>
+      </properties>
+      <activation>
+        <activeByDefault>true</activeByDefault>&lt;!&ndash;默认启用dev环境配置 &ndash;&gt;
+      </activation>
+    </profile>
+    <profile>
+      <id>test</id>
+      <properties>
+        <env>test</env>
+        &lt;!&ndash; <envir.jdbc.ip>120.77.255.169</envir.jdbc.ip>
+          <envir.jdbc.url>jdbc:mysql://120.77.255.169:3306/energy?useUnicode=true;ampcharacterEncoding=UTF-8;ampzeroDateTimeBehavior=convertToNull</envir.jdbc.url>
+          <envir.jdbc.username>energy</envir.jdbc.username>
+          <envir.jdbc.password>energy1</envir.jdbc.password>
+          <envir.profile.active>dev</envir.profile.active> &ndash;&gt;
+        <envir.deploy.url>http://112.74.45.148:8080/manager/text</envir.deploy.url>
+      </properties>
+    </profile>
+    <profile>
+      <id>pro</id>
+      <properties>
+        <env>pro</env>&lt;!&ndash; 可以使用<en>pro</en>标签，但是需要在下面的filter路径中改为${en}，否则找不到 &ndash;&gt;
+        &lt;!&ndash; <envir.jdbc.ip>172.18.4.168</envir.jdbc.ip>
+          <envir.jdbc.url>jdbc:mysql://172.18.4.168:3306/energy?useUnicode=true;ampcharacterEncoding=UTF-8;ampzeroDateTimeBehavior=convertToNull</envir.jdbc.url>
+          <envir.jdbc.username>energy</envir.jdbc.username>
+          <envir.jdbc.password>energy1</envir.jdbc.password>
+          <envir.profile.active>pro</envir.profile.active> &ndash;&gt;
+        <envir.deploy.url>http://120.77.255.169:8080/manager/text</envir.deploy.url>
+      </properties>
+    </profile>
+  </profiles>-->
+
+  <build>
+
+    <!-- 配置默认的Goals -->
+    <defaultGoal>compile</defaultGoal>
+
+    <!-- 定义过滤器 ，指定过滤资源的地址 -->
+    <!--<filters>
+      <filter>src/main/resources/filters/db_${env}.properties</filter>
+      &lt;!&ndash; 此处${env}的名称env必须与上面配置的默认的properties中的标签名env相同，否则报错；
+        可以与上面默认的properties配置下面各个环境下的<env>标签不同名称，不同(即不是env)时，即使通过package -P pro指定了环境也会使用默认的properties配置；
+        因为在默认propeties配置下面的profiles中均为<env>标签的配置，找不到同名的
+      &ndash;&gt;
+    </filters>-->
+
+    <!-- 如果不添加此节点mybatis的mapper.xml文件都会被漏掉 -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory><!-- 资源目录，即在该目录下启用过滤 -->
+        <filtering>true</filtering>
+      </resource>
+
+      <resource>
+        <directory>src/main/java</directory>
+        <includes>
+          <include>**/*.properties</include>
+          <include>**/*.xml</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*.properties</include>
+          <include>**/*.xml</include>
+        </includes>
+        <filtering>false</filtering>
+      </resource>
+    </resources>
+
+    <!-- <sourceDirectory>src</sourceDirectory> -->
+    <pluginManagement>
+      <plugins>
+
+        <!-- maven-resources插件 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+
+        <!-- maven-compiler插件 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target><!-- JDK编译版本 -->
+            <encoding>UTF-8</encoding>
+            <compilerArguments>
+              <verbose/>
+              <bootclasspath>${env.JAVA_HOME}/jre/lib/rt.jar</bootclasspath>
+              <extdirs>${project.basedir}/src/main/webapp/WEB-INF/lib</extdirs>
+            </compilerArguments>
+          </configuration>
+        </plugin>
+
+        <!-- maven-war插件 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>3.0.0</version>
+          <configuration>
+            <!-- <warSourceDirectory>WebContent</warSourceDirectory> -->
+            <failOnMissingWebXml>true</failOnMissingWebXml>
+            <!-- <webXml>WebContent\WEB-INF\web.xml</webXml> --><!--如果不是Maven的标准目录结构，此处需要配置 -->
+          </configuration>
+        </plugin>
+
+        <!-- maven-surefire插件 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.18.1</version>
+          <configuration>
+            <skipTests>true</skipTests><!-- 不执行测试用例，但编译测试用例类生成相应的class文件至target/test-classes下 -->
+          </configuration>
+        </plugin>
+
+        <!-- maven-surefire-report单元测试报告（默认text，命令mvn surefire-report:report生成html） -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>2.12.2</version>
+          <configuration>
+            <showSuccess>false</showSuccess>
+          </configuration>
+        </plugin>
+
+        <!-- cobertura测试覆盖率报告，命令:mvn cobertura:cobertura -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>cobertura-maven-plugin</artifactId>
+          <version>2.5.1</version>
+          <configuration>
+            <formats>
+              <format>html</format>
+              <format>xml</format>
+            </formats>
+          </configuration>
+          <executions>
+            <execution>
+              <id>cobertura-report</id>
+              <goals>
+                <goal>cobertura</goal>
+              </goals>
+              <phase>test</phase>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- 构建项目站点报告插件 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.0-beta-3</version>
+          <configuration>
+            <locales>zh_CN</locales><!-- 配置站点国际化 -->
+            <outputEncoding>GBK</outputEncoding><!-- 输出编码 -->
+          </configuration>
+        </plugin>
+
+        <!-- 项目API doc报告 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+
+        <!-- MBG插件 -->
+        <!-- https://mvnrepository.com/artifact/org.mybatis.generator/mybatis-generator-core -->
+        <plugin>
+          <groupId>org.mybatis.generator</groupId>
+          <artifactId>mybatis-generator-maven-plugin</artifactId>
+          <version>1.3.5</version>
+          <configuration>
+            <!-- 注意：此处mybatis-generator为手动新建的source folder，即与src处于同级目录，因此generatorConfig.xml配置包名即为src下的包 -->
+            <!-- <configurationFile>mybatis-generator/generatorConfig.xml</configurationFile> -->
+            <!-- 注意：此处mybatis-generator为src/main/resources/下手动新建的普通folder，即位于resources目录下 -->
+            <configurationFile>${basedir}src/main/resources/mybatis-generator/generatorConfig.xml</configurationFile>
+            <verbose>true</verbose>
+            <overwrite>true</overwrite>
+          </configuration>
+          <executions>
+            <execution>
+              <id>Generate MyBatis Artifacts</id>
+              <goals>
+                <goal>generate</goal>
+              </goals>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>org.mybatis.generator</groupId>
+              <artifactId>mybatis-generator-core</artifactId>
+              <version>1.3.2</version>
+            </dependency>
+            <dependency>
+              <groupId>mysql</groupId>
+              <artifactId>mysql-connector-java</artifactId>
+              <version>${mysql.version}</version>
+              <scope>runtime</scope>
+            </dependency>
+          </dependencies>
+        </plugin>
+
+        <!-- JMH Shade插件 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.0</version>
+          <executions>
+            <execution>
+              <phase>package</phase>
+              <goals>
+                <goal>shade</goal>
+              </goals>
+              <configuration>
+                <finalName>microbenchmarks</finalName>
+                <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                    <mainClass>org.openjdk.jmh.Main</mainClass>
+                  </transformer>
+                </transformers>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- tomcat插件 -->
+        <!--<plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>tomcat-maven-plugin</artifactId>
+          <version>1.1</version>
+          <configuration>
+            <port>8080</port>
+            <uriEncoding>UTF-8</uriEncoding>
+            <url>${envir.deploy.url}</url>
+            &lt;!&ndash; <url>http://192.168.5.12:8080/manager/text</url> &ndash;&gt;
+            <server>tomcat8</server>&lt;!&ndash; 要求和setting.xml中配置的ID一致 &ndash;&gt;
+            <username>energy</username>
+            <password>energy1</password>
+            &lt;!&ndash; <warSourceDirectory>WebContent</warSourceDirectory> &ndash;&gt;
+            <path>/GameServer</path>
+            &lt;!&ndash; 如果路径在tomcat服务器中已存在且使用mvn tomcat7:deploy的话，则必须配置<update>true</update>，否则报错；实际本机Win 10 deploy或redeploy都没报错 &ndash;&gt;
+            <update>true</update>
+          </configuration>
+        </plugin>-->
+
+        <!-- tomcat7插件 -->
+        <!--<plugin>
+          &lt;!&ndash; 部署：mvn clean tomcat:redeploy &ndash;&gt;
+          <groupId>org.apache.tomcat.maven</groupId>
+          <artifactId>tomcat7-maven-plugin</artifactId>
+          <version>2.2</version>
+          <configuration>
+            <port>8080</port>
+            <uriEncoding>UTF-8</uriEncoding>
+            <url>${envir.deploy.url}</url>
+            &lt;!&ndash; <url>http://112.74.45.148:8080/manager/text</url> &ndash;&gt;
+            &lt;!&ndash; <url>http://192.168.5.12:8080/manager/text</url> &ndash;&gt;
+            <server>tomcat8</server>&lt;!&ndash; 要求和setting.xml中配置的ID一致 &ndash;&gt;
+            <username>energy</username>
+            <password>energy1</password>
+            &lt;!&ndash; <warSourceDirectory>WebContent</warSourceDirectory> &ndash;&gt;
+            <path>/GameServer</path>
+            &lt;!&ndash; 如果路径在tomcat服务器中已存在且使用mvn tomcat7:deploy的话，则必须配置<update>true</update>，否则报错；实际本机Win 10 deploy或redeploy都没报错 &ndash;&gt;
+            <update>true</update>
+          </configuration>
+          &lt;!&ndash; <executions>
+            <execution>
+            <phase>package</phase>
+            <goals>
+            <goal>run</goal>
+            </goals>
+            </execution>
+            </executions> &ndash;&gt;
+        </plugin>-->
+
+        <!-- tomcat8插件 -->
+        <!-- <plugin>
+          <groupId>org.apache.tomcat.maven</groupId>
+          <artifactId>tomcat8-maven-plugin</artifactId>
+          <version>3.0-r1655215</version>
+          </plugin> -->
+
+        <!-- javarebel插件 -->
+        <plugin>
+          <groupId>org.zeroturnaround</groupId>
+          <artifactId>javarebel-maven-plugin</artifactId>
+          <version>1.0.5</version>
+          <executions>
+            <execution>
+              <id>generate-rebel-xml</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>generate</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+
+      </plugins>
+    </pluginManagement>
+    <finalName>GameServer</finalName>
+  </build>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>ias-snapshots</id>
+      <name>Infinite Automation Snapshot Repository</name>
+      <url>https://maven.mangoautomation.net/repository/ias-snapshot/</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>ias-releases</id>
+      <name>Infinite Automation Release Repository</name>
+      <url>https://maven.mangoautomation.net/repository/ias-release/</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.fusesource.jansi/jansi -->
+    <!-- java.lang.NoClassDefFoundError: Could not initialize class org.fusesource.jansi.WindowsAnsiOutputStream -->
+    <!-- <dependency>
+      <groupId>org.fusesource.jansi</groupId>
+      <artifactId>jansi</artifactId>
+      <version>1.2.1</version>
+      <scope>provided</scope>
+      </dependency> -->
+
+    <!-- modbus4j -->
+    <!-- <dependency>
+      <groupId>com.infiniteautomation</groupId>
+      <artifactId>modbus4j</artifactId>
+      <version>3.0.3</version>
+      </dependency> -->
+    <!-- <dependency>
+      <groupId>com.serotonin</groupId>
+      <artifactId>modbus4j</artifactId>
+      <version>3.0.3</version>
+      </dependency> -->
+
+    <!-- <dependency>
+      <groupId>com.intelligt.modbus</groupId>
+      <artifactId>jlibmodbus</artifactId>
+      <version>1.2.9.7</version>
+      </dependency> -->
+
+    <!-- 解决：部署时产生的内存泄漏；原因：每次（重新）部署时，Tomcat会为项目新建一个类加载器，而旧的类加载器没有被GC回收，须配合web.xml：
+      <listener>
+      <listener-class>se.jiderhamn.classloader.leak.prevention.ClassLoaderLeakPreventorListener</listener-class>
+      </listener>
+    -->
+    <dependency>
+      <groupId>se.jiderhamn.classloader-leak-prevention</groupId>
+      <artifactId>classloader-leak-prevention-servlet</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+
+    <!-- energy-sdk -->
+    <!--<dependency>
+      <groupId>cn.edu.tsinghua</groupId>
+      <artifactId>energy-sdk</artifactId>
+      <version>${energySDK.version}</version>
+    </dependency>-->
+
+    <!-- com.datastax.cassandr -->
+    <dependency>
+      <groupId>com.datastax.cassandra</groupId>
+      <artifactId>cassandra-driver-core</artifactId>
+      <version>3.2.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.datastax.cassandra</groupId>
+      <artifactId>cassandra-driver-mapping</artifactId>
+      <version>3.2.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.datastax.cassandra</groupId>
+      <artifactId>cassandra-driver-extras</artifactId>
+      <version>3.2.0</version>
+    </dependency>
+
+    <!-- javax.servlet -->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.0.1</version>
+      <scope>provided</scope><!-- tomcat已有提供，设为provided -->
+    </dependency>
+
+    <!-- jsp -->
+    <dependency>
+      <groupId>javax.servlet.jsp</groupId>
+      <artifactId>jsp-api</artifactId>
+      <version>2.1</version>
+      <scope>provided</scope><!-- tomcat已有提供，设为provided -->
+    </dependency>
+
+    <!-- jstl -->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>jstl</artifactId>
+      <version>1.2</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- javaee -->
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-api</artifactId>
+      <version>${javaee.version}</version>
+    </dependency>
+
+    <!-- easymock -->
+    <!-- <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <version>2.4</version>
+      </dependency> -->
+
+    <!-- 上传组件包 -->
+    <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>1.3.1</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <!-- <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.9</version>
+      </dependency> -->
+
+    <!-- commons-logging -->
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.2</version>
+    </dependency>
+    <!-- log4j -->
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+    <!--log4j2 -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>2.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jcl</artifactId>
+      <version>2.7</version>
+    </dependency>
+
+    <!-- logback -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.logback-extensions</groupId>
+      <artifactId>logback-ext-spring</artifactId>
+      <version>0.1.1</version>
+    </dependency>
+
+    <!-- slf4j -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <!-- log4j for slf4j -->
+    <dependency><!-- Log4J Adapter for SLF4J -->
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!-- mail -->
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <!-- activation -->
+    <dependency>
+      <groupId>javax.activation</groupId>
+      <artifactId>activation</artifactId>
+      <version>1.1.1</version>
+    </dependency>
+
+    <!-- junit -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <!-- 表示开发的时候引入，发布的时候不会加载此包，本地启动要求注释掉，否则ClassNotFoundException -->
+      <!-- <scope>test</scope> -->
+    </dependency>
+
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.10</version>
+    </dependency>
+
+    <!-- httpcomponents -->
+    <!-- httpclient -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.3.2</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- fluent-hc -->
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>fluent-hc</artifactId>
+      <version>4.3.2</version>
+    </dependency>
+
+    <!-- jackson-数据绑定 -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.5.4</version>
+      <!-- <version>2.8.8</version> -->
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.5.4</version>
+      <!-- <version>2.8.8</version> -->
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+      <version>2.5.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+      <version>1.9.13</version>
+    </dependency>
+
+    <!-- json -->
+    <dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <!-- <version>20090211</version> -->
+      <!-- <version>20160810</version> -->
+      <version>20170516</version>
+    </dependency>
+    <!-- 从文件读取json
+      <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.4</version>
+      </dependency>
+    -->
+
+    <!-- json-lib -->
+    <dependency>
+      <groupId>net.sf.json-lib</groupId>
+      <artifactId>json-lib</artifactId>
+      <version>2.4</version>
+      <classifier>jdk15</classifier><!-- 要求指定jdk版本 -->
+    </dependency>
+
+    <!-- fastjson -->
+    <!-- 格式化对象，方便输出日志 -->
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>fastjson</artifactId>
+      <version>1.1.41</version>
+    </dependency>
+
+    <!-- gjson -->
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <!-- <version>1.6</version> -->
+      <version>2.4</version>
+    </dependency>
+
+    <!-- quartz -->
+    <dependency>
+      <groupId>org.quartz-scheduler</groupId>
+      <artifactId>quartz</artifactId>
+      <version>2.2.3</version>
+    </dependency>
+
+    <!-- quartz.properties要求补充依赖 -->
+    <dependency>
+      <groupId>org.quartz-scheduler</groupId>
+      <artifactId>quartz-jobs</artifactId>
+      <version>2.2.3</version>
+    </dependency>
+
+    <!-- jta -->
+    <!-- <dependency>
+      <groupId>javax.transaction</groupId>
+      <artifactId>jta</artifactId>
+      <version>1.1</version>
+      </dependency> -->
+
+    <!-- spring -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aspects</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId><!-- 该依赖将引入其他四个基本依赖 -->
+      <artifactId>spring-webmvc</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+
+    <!--spring单元测试依赖 -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- spring webmvc相关jar -->
+    <!-- <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>${spring.version}</version>
+      </dependency> -->
+    <!-- <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>${spring.version}</version>
+      </dependency> -->
+
+    <!--
+      Error creating bean with name 'org.springframework.validation.beanvalidation.OptionalValidatorFactoryBean#0':
+      Invocation of init method failed; nested exception is java.lang.AbstractMethodError: org.apache.bval.jsr303.ConfigurationImpl.getDefaultParameterNameProvider()Ljavax/validation/ParameterNameProvider;
+    -->
+    <!-- <dependency>
+      <groupId>org.apache.bval</groupId>
+      <artifactId>bval-jsr303</artifactId>
+      <version>0.5</version>
+      </dependency> -->
+    <dependency>
+      <groupId>javax.validation</groupId>
+      <artifactId>validation-api</artifactId>
+      <version>1.1.0.Final</version>
+    </dependency>
+    <!-- JSR303数据校验支持：tomcat7及以上的服务器，而tomcat7以下的服务器：el表达式，须额外给服务器的lib包中替换新的标准的el -->
+    <!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-validator -->
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-validator</artifactId>
+      <!-- <version>5.4.1.Final</version> -->
+      <version>5.2.4.Final</version>
+    </dependency>
+
+    <!-- mybatis -->
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+      <version>${mybatis.version}</version>
+    </dependency>
+
+    <!-- mybatis整合spring适配包 -->
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis-spring</artifactId>
+      <!-- <version>1.2.3</version> -->
+      <version>1.3.1</version>
+    </dependency>
+
+    <!-- pageHelper分页插件 -->
+    <dependency>
+      <groupId>com.github.pagehelper</groupId>
+      <artifactId>pagehelper</artifactId>
+      <version>5.0.0</version>
+    </dependency>
+
+    <!-- 数据库驱动与连接池 -->
+    <!-- mysql -->
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>${mysql.version}</version>
+    </dependency>
+    <!-- c3p0 -->
+    <!-- <dependency>
+      <groupId>com.mchange</groupId>
+      <artifactId>c3p0</artifactId>
+      <version>0.9.5.2</version>
+      </dependency> -->
+    <dependency>
+      <groupId>c3p0</groupId>
+      <artifactId>c3p0</artifactId>
+      <version>0.9.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.mchange</groupId>
+      <artifactId>mchange-commons-java</artifactId>
+      <version>0.2.15</version>
+    </dependency>
+    <!-- dbcp -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-dbcp2</artifactId>
+      <version>2.1</version>
+    </dependency>
+    <!-- druid -->
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>druid</artifactId>
+      <version>1.1.9</version>
+    </dependency>
+
+    <!-- dbutils -->
+    <dependency>
+      <groupId>commons-dbutils</groupId>
+      <artifactId>commons-dbutils</artifactId>
+      <version>1.7</version>
+    </dependency>
+
+    <!-- freemarker -->
+    <dependency>
+      <groupId>org.freemarker</groupId>
+      <artifactId>freemarker</artifactId>
+      <version>2.3.20</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
+    <!-- netty -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.1.6.Final</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-core -->
+    <!-- jmh -->
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>1.21</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>1.21</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- 引入poi，解析workbook视图 -->
+    <!-- poi -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi</artifactId>
+      <version>3.17</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>3.17</version>
+    </dependency>
+    <!-- 处理excel和上面功能是一样的 -->
+    <!-- jxl -->
+    <dependency>
+      <groupId>net.sourceforge.jexcelapi</groupId>
+      <artifactId>jxl</artifactId>
+      <version>2.6.10</version>
+    </dependency>
+
+    <!-- socket.io类库 -->
+    <dependency>
+      <groupId>io.socket</groupId>
+      <artifactId>socket.io-client</artifactId>
+      <version>0.8.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.7</version>
+    </dependency>
+    <!-- <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.6</version>
+      </dependency> -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.16.20</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Dozer -->
+    <dependency>
+      <groupId>net.sf.dozer</groupId>
+      <artifactId>dozer</artifactId>
+      <version>5.5.1</version>
+    </dependency>
+
+  </dependencies>
+
+</project>
